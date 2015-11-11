@@ -5,7 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-import net.haagenti.urtmatchmaking.config.Config;
+import net.haagenti.urtmatchmaking.config.Protocol;
 
 public class MMserver implements Runnable {
 	
@@ -13,18 +13,19 @@ public class MMserver implements Runnable {
 	private byte[] receiveData;
 	private byte[] sendData;
 	
-	public Config cfg;
+	public Protocol cfg;
 	
-	public MMserver(Config cfg) {
+	public MMserver(Protocol cfg) {
 		this.cfg = cfg;
 		setup();
 	}
 
 	public void setup() {
 		try {
-			serverSocket = new DatagramSocket(cfg.getMMport());
+			serverSocket = new DatagramSocket(cfg.port);
 			receiveData = new byte[1024];
 			sendData = new byte[1024];
+			cfg.mmserver = this;
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}

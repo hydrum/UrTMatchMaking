@@ -1,24 +1,30 @@
 package net.haagenti.urtmatchmaking.config;
 
 import java.util.Arrays;
+import java.util.Set;
 
+import net.haagenti.urtmatchmaking.connection.MMserver;
 import net.haagenti.urtmatchmaking.connection.NetAddress;
 import net.haagenti.urtmatchmaking.match.Map;
 import net.haagenti.urtmatchmaking.match.Match;
+import net.haagenti.urtmatchmaking.match.MatchType;
 import net.haagenti.urtmatchmaking.queue.QueueManager;
 import net.haagenti.urtmatchmaking.queue.QueuePlayer;
 import net.haagenti.urtmatchmaking.queue.Region;
 
-public class Config {
+public class Protocol {
 	
-	private ConfigType type;
-	private int port;
-	
+	public int port;
+
 	private QueueManager queue;
+	public MMserver mmserver;
 	
-	public Config(ConfigType type, int port) {
-		this.type = type;
+	public Protocol(MatchType type, int port) {
 		this.port = port;
+		
+		queue = new QueueManager(this, type);
+		Thread queueThread = new Thread(queue);
+		queueThread.start();
 	}
 	
 	public final String processPacket(String data, NetAddress address) {
@@ -48,14 +54,13 @@ public class Config {
 	
 	private String processQueue(String[] data, NetAddress address) {
 		if (data.length == 6) {
-			// check if gametype is the right one
-			if (data[3].split(":")[1].equals(type.name())) {
+			if (data[3].split(":")[1].equals(queue.matchtype.name())) {
 				String urtauth = data[1].split(":")[1];
 				Region region = Region.valueOf(data[2].split(":")[1]);
 				Map map = Map.valueOf(data[3].split(":")[1]);
 				String position = data[4].split(":")[1];
 				
-				return queue.addPlayer(new QueuePlayer(address, urtauth, region, map, position));
+				return queue.addPlayer(region, new QueuePlayer(address, urtauth, map, position));
 			}
 		}
 		return "RESPONSE|QUEUE|error";	
@@ -63,7 +68,7 @@ public class Config {
 	
 	private String processMatchAccept(String[] data, NetAddress address) {
 		if (data.length == 3) {
-			queue.matchAccept(QueuePlayer.find(data[1].split(":")[1]), Boolean.valueOf(data[2].split(":")[1]));
+			QueuePlayer.find(data[1].split(":")[1]).acceptMatch(Boolean.valueOf(data[2].split(":")[1]));
 		}
 		return null;	
 	}
@@ -102,10 +107,49 @@ public class Config {
 		}
 		return null;	
 	}
-	
-	public final int getMMport() {
-		return port;
+
+	public void requestAccept(Set<QueuePlayer> players) {
+		for (QueuePlayer player : players) {
+			mmserver.send(player.address, "MATCHACCEPT|reply");
+		}
 	}
+
+	public void acceptFailed(QueuePlayer player, Boolean continued) {
+		if (continued) {
+			mmserver.send(player.address, "MATCHACCEPT|failed|continue");
+		} else {
+			mmserver.send(player.address, "MATCHACCEPT|failed|break");
+		}
+	}
+
+	public void setupGameserver(NetAddress address, int id, MatchType type, Map map, String password, QueuePlayer[] teamred, QueuePlayer[] teamblue) {
+		String teamred_print = teamred[0].getUrTAuth();
+		for (int i = 1; i < teamred.length; i++) {
+			teamred_print += teamred[i].getUrTAuth();
+		}
+		String teamblue_print = teamblue[0].getUrTAuth();
+		for (int i = 1; i < teamblue.length; i++) {
+			teamblue_print += teamblue[i].getUrTAuth();
+		}
+		
+		String print = "SERVERSETUP|matchid:" + id + "|config:" + type.name() + "|map:" + map.name() + "|password:"
+						+ password + "|redteam:" + teamred_print + "|teamblue:" +teamblue_print;
+		mmserver.send(address, print);
+	}
+
+	public void acceptSuccess(Set<QueuePlayer> players, NetAddress address, String password) {
+		for (QueuePlayer player : players) {
+			mmserver.send(player.address, "MATCHACCEPT|success|server:" + address.address + ":" + address.port + "|password:" + password);
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 	
 
 }
