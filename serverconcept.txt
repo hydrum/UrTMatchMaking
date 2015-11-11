@@ -1,0 +1,34 @@
+udp - connectionless
+
+QUEUEING [Client - Master]
+C: QUEUE|urtauth:gost0r|region:eu|mode:ctf|map:ut4_turnpike|pos:atk>def>mid
+a) M: RESPONSE|QUEUE|success
+b) M: RESPONSE|QUEUE|error
+
+M: MATCHACCEPT|reply
+C: MATCHACCEPT|urtauth:gost0r|ready:true
+a) M: MATCHACCEPT|success|server:127.0.0.1:27960|password:RANDOMGEN1337
+a) M: MATCHACCEPT|failed
+
+C: LEAVEQUEUE|urtauth:gost0r
+
+C: GETSTATUSINFO
+M: RESPONSE|GETSTATUSINFO|inqueue:13|ongoingmatches:2|nextavimatch:2h31m12s
+
+C: GETMAPLIST|mode:ctf
+M: RESPONSE|GETMAPLIST|maps:ut4_turnpike;ut4_abbey;ut4_algiers;ut4_tohunga_b8
+
+[GameServer - Master]
+M: SERVERSETUP|matchid:1337|config:ctf|map:map|password:password|redteam:gost0r;biddle|teamblue:nounou;clearskies
+G: RESPONSE|SERVERSETUP|done
+
+G: PLAYERLEFT|matchid:1337|urtauth:biddle
+a) M: RESPOND|PLAYERLEFT|searchringer
+b) M: RESPOND|PLAYERLEFT|quit		[depending if ringer enabled]
+
+G: RESULT|matchid:1337|half:1|redscore:1|bluescore:7|[PLAYERRESULTS?]
+a) M: RESPOND|RESULT|nexthalf
+b) M: RESPOND|RESULT|done	[depending on matchsettings]
+
+M: RCON PLAYERS
+G: .... ingametime:1h5m2s

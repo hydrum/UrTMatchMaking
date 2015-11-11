@@ -1,0 +1,20 @@
+position you would like to play in a config header after preferance (def > atk > mid for example)
+
+queue up, vote for a map
+the longer you wait, the greater skill difference will be (elo +- bounce increases)
+if players found, match their votes, set up the server, auto-connect to the server
+
+on server: have a cvar which disables certain features:
+- each player has to ready up before it starts (autotimer?)
+- votes are disabled
+- team menus to join are disabled / autoforce players to their team
+- disable subs
+- gets a match id to identify the match
+
+callback server -> master
+- when half ended
+- when player left
+
+how to handle certain situations:
+- a player leaves before the match ends
+- a player doesnt show up
