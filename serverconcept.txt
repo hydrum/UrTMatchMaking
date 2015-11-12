@@ -1,6 +1,11 @@
 udp - connectionless
 
-QUEUEING [Client - Master]
+[Client - Master]
+C: HELLO|urtauth:gost0r
+a) M: RESPONSE|HELLO|ingame [to reconnect]
+b) M: RESPONSE|HELLO|suspended
+c) M: RESPONSE|HELLO|nothing [everything's fine]
+
 C: QUEUE|urtauth:gost0r|region:eu|mode:ctf|map:ut4_turnpike|pos:atk>def>mid
 a) M: RESPONSE|QUEUE|success
 b) M: RESPONSE|QUEUE|error
@@ -8,7 +13,8 @@ b) M: RESPONSE|QUEUE|error
 M: MATCHACCEPT|reply
 C: MATCHACCEPT|urtauth:gost0r|ready:true
 a) M: MATCHACCEPT|success|server:127.0.0.1:27960|password:RANDOMGEN1337
-a) M: MATCHACCEPT|failed
+b) M: MATCHACCEPT|failed|continue
+c) M: MATCHACCEPT|failed|break		[break: dodged or didnt accept, continue: queue still up]
 
 C: LEAVEQUEUE|urtauth:gost0r
 
@@ -23,12 +29,12 @@ M: SERVERSETUP|matchid:1337|config:ctf|map:map|password:password|redteam:gost0r;
 G: RESPONSE|SERVERSETUP|done
 
 G: PLAYERLEFT|matchid:1337|urtauth:biddle
-a) M: RESPOND|PLAYERLEFT|searchringer
-b) M: RESPOND|PLAYERLEFT|quit		[depending if ringer enabled]
+a) M: RESPONSE|PLAYERLEFT|searchringer
+b) M: RESPONSE|PLAYERLEFT|quit		[depending if ringer enabled]
 
 G: RESULT|matchid:1337|half:1|redscore:1|bluescore:7|[PLAYERRESULTS?]
-a) M: RESPOND|RESULT|nexthalf
-b) M: RESPOND|RESULT|done	[depending on matchsettings]
+a) M: RESPONSE|RESULT|nexthalf
+b) M: RESPONSE|RESULT|done	[depending on matchsettings]
 
 M: RCON PLAYERS
 G: .... ingametime:1h5m2s

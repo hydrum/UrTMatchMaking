@@ -5,6 +5,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
+import net.haagenti.urtmatchmaking.Debug;
+import net.haagenti.urtmatchmaking.Debug.TAG;
 import net.haagenti.urtmatchmaking.config.Protocol;
 
 public class MMserver implements Runnable {
@@ -22,6 +24,7 @@ public class MMserver implements Runnable {
 
 	public void setup() {
 		try {
+			Debug.Log(TAG.MMSERVER, "Setting up MMserver");
 			serverSocket = new DatagramSocket(cfg.port);
 			receiveData = new byte[1024];
 			sendData = new byte[1024];
@@ -39,6 +42,7 @@ public class MMserver implements Runnable {
 				NetAddress address = new NetAddress(receivePacket.getAddress(), receivePacket.getPort());
 				String response = cfg.processPacket(new String(receivePacket.getData()), address);
 				if (response != null)
+					Debug.Log(TAG.MMSERVER, "Sending reply package");
 					send(address, response);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -50,6 +54,7 @@ public class MMserver implements Runnable {
 			sendData = data.getBytes();
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address.address, address.port);
 			serverSocket.send(sendPacket);	
+			Debug.Log(TAG.MMSERVER, "Sent Packet to " + address.address + ":" + address.port + ": " + sendData);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}	

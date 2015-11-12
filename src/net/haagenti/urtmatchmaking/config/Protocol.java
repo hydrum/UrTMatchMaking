@@ -3,13 +3,15 @@ package net.haagenti.urtmatchmaking.config;
 import java.util.Arrays;
 import java.util.Set;
 
+import net.haagenti.urtmatchmaking.Debug;
+import net.haagenti.urtmatchmaking.Debug.TAG;
 import net.haagenti.urtmatchmaking.connection.MMserver;
 import net.haagenti.urtmatchmaking.connection.NetAddress;
 import net.haagenti.urtmatchmaking.match.Map;
 import net.haagenti.urtmatchmaking.match.Match;
 import net.haagenti.urtmatchmaking.match.MatchType;
+import net.haagenti.urtmatchmaking.player.Player;
 import net.haagenti.urtmatchmaking.queue.QueueManager;
-import net.haagenti.urtmatchmaking.queue.QueuePlayer;
 import net.haagenti.urtmatchmaking.queue.Region;
 
 public class Protocol {
@@ -20,14 +22,17 @@ public class Protocol {
 	public MMserver mmserver;
 	
 	public Protocol(MatchType type, int port) {
+		Debug.Log(TAG.PROTOCOL, "Setting up Protocol for MMServer port " + port);
 		this.port = port;
-		
+
+		Debug.Log(TAG.PROTOCOL, "Initializing new QueueManager Thread");
 		queue = new QueueManager(this, type);
 		Thread queueThread = new Thread(queue);
 		queueThread.start();
 	}
 	
 	public final String processPacket(String data, NetAddress address) {
+		Debug.Log(TAG.PROTOCOL, "New Packet: " + address.address.toString() + " - " + data);
 		String[] sdata = data.split("|");
 		if (sdata.length == 0) return null;
 		
@@ -47,7 +52,7 @@ public class Protocol {
 	
 	private String processHello(String[] data, NetAddress address) {
 		if (data.length == 2) {
-			return queue.checkPlayerStatus(QueuePlayer.find(data[1].split(":")[1]));
+			return Player.getStatus(data[1].split(":")[1], address);
 		}
 		return null;
 	}
@@ -60,22 +65,28 @@ public class Protocol {
 				Map map = Map.valueOf(data[3].split(":")[1]);
 				String position = data[4].split(":")[1];
 				
-				return queue.addPlayer(region, new QueuePlayer(address, urtauth, map, position));
+				Player player = Player.find(urtauth);
+				
+				if (player != null) {
+					player.joinQueue(map, position);
+					
+					return queue.addPlayer(region, player);
+				}
 			}
 		}
 		return "RESPONSE|QUEUE|error";	
 	}
 	
 	private String processMatchAccept(String[] data, NetAddress address) {
-		if (data.length == 3) {
-			QueuePlayer.find(data[1].split(":")[1]).acceptMatch(Boolean.valueOf(data[2].split(":")[1]));
+		if (data.length == 4) {
+			Match.find(data[1].split(":")[1]).playerAccept(Player.find(data[2].split(":")[1]), Boolean.valueOf(data[3].split(":")[1]));
 		}
 		return null;	
 	}
 	
 	private String processLeaveQueue(String[] data, NetAddress address) {
 		if (data.length == 3) {
-			queue.leavePlayer(QueuePlayer.find(data[1].split(":")[1]));			
+			queue.leavePlayer(Player.find(data[1].split(":")[1]));			
 		}
 		return null;	
 	}
@@ -96,7 +107,7 @@ public class Protocol {
 	
 	private String processPlayerLeft(String[] data, NetAddress address) {
 		if (data.length == 3) {
-			return Match.find(data[1].split(":")[1]).playerLeft(QueuePlayer.find(data[2].split(":")[1]));
+			return Match.find(data[1].split(":")[1]).playerLeft(Player.find(data[2].split(":")[1]));
 		}
 		return null;	
 	}
@@ -107,22 +118,27 @@ public class Protocol {
 		}
 		return null;	
 	}
+	
+	
+	
+	
+	// REQUESTS //
 
-	public void requestAccept(Set<QueuePlayer> players) {
-		for (QueuePlayer player : players) {
-			mmserver.send(player.address, "MATCHACCEPT|reply");
+	public void requestAccept(int matchid, Set<Player> players) {
+		for (Player player : players) {
+			mmserver.send(player.address, "MATCHACCEPT|matchid:" + matchid + "|reply");
 		}
 	}
 
-	public void acceptFailed(QueuePlayer player, Boolean continued) {
+	public void acceptFailed(int matchid, Player player, Boolean continued) {
 		if (continued) {
-			mmserver.send(player.address, "MATCHACCEPT|failed|continue");
+			mmserver.send(player.address, "MATCHACCEPT|matchid:" + matchid + "|failed|continue");
 		} else {
-			mmserver.send(player.address, "MATCHACCEPT|failed|break");
+			mmserver.send(player.address, "MATCHACCEPT|matchid:" + matchid + "|failed|break");
 		}
 	}
 
-	public void setupGameserver(NetAddress address, int id, MatchType type, Map map, String password, QueuePlayer[] teamred, QueuePlayer[] teamblue) {
+	public void setupGameserver(NetAddress qaddress, int matchid, MatchType type, Map map, String password, Player[] teamred, Player[] teamblue) {
 		String teamred_print = teamred[0].getUrTAuth();
 		for (int i = 1; i < teamred.length; i++) {
 			teamred_print += teamred[i].getUrTAuth();
@@ -132,24 +148,15 @@ public class Protocol {
 			teamblue_print += teamblue[i].getUrTAuth();
 		}
 		
-		String print = "SERVERSETUP|matchid:" + id + "|config:" + type.name() + "|map:" + map.name() + "|password:"
+		String print = "SERVERSETUP|matchid:" + matchid + "|config:" + type.name() + "|map:" + map.name() + "|password:"
 						+ password + "|redteam:" + teamred_print + "|teamblue:" +teamblue_print;
-		mmserver.send(address, print);
+		mmserver.send(qaddress, print);
 	}
 
-	public void acceptSuccess(Set<QueuePlayer> players, NetAddress address, String password) {
-		for (QueuePlayer player : players) {
-			mmserver.send(player.address, "MATCHACCEPT|success|server:" + address.address + ":" + address.port + "|password:" + password);
+	public void acceptSuccess(int matchid, Set<Player> players, NetAddress serverpubaddress, String password) {
+		for (Player player : players) {
+			mmserver.send(player.address, "MATCHACCEPT|matchid:" + matchid + "|success|server:" + serverpubaddress.address + ":" + serverpubaddress.port + "|password:" + password);
 		}
 	}
 	
-	
-	
-	
-	
-	
-	
-	
-	
-
 }

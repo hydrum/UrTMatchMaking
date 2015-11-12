@@ -6,9 +6,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Random;
 
+import net.haagenti.urtmatchmaking.Debug;
+import net.haagenti.urtmatchmaking.Debug.TAG;
 import net.haagenti.urtmatchmaking.connection.Database;
+import net.haagenti.urtmatchmaking.player.Player;
 import net.haagenti.urtmatchmaking.queue.QueueManager;
-import net.haagenti.urtmatchmaking.queue.QueuePlayer;
+import net.haagenti.urtmatchmaking.server.Server;
 
 public class Match {
 	
@@ -17,12 +20,12 @@ public class Match {
 
 	private long starttime;
 	private Server server;
-	public HashMap<QueuePlayer, Boolean> players;
+	public HashMap<Player, Boolean> players;
 	
 	private MatchType type;
 	
-	public QueuePlayer[] teamred;
-	public QueuePlayer[] teamblue;	
+	public Player[] teamred;
+	public Player[] teamblue;	
 	public int elored;
 	public int eloblue;
 	public Map map = null;
@@ -36,14 +39,18 @@ public class Match {
 	private long waitAccept = 30 * 1000; // waiting 30sec to accept
 	private long acceptStartTime = 0;
 	
-	public Match(QueueManager queue, Server server, ArrayList<QueuePlayer> players) {
+	public Match(QueueManager queue, Server server, ArrayList<Player> players) {
+		Debug.Log(TAG.MATCH, "Setting up Match");
 		this.server = server;
 		this.queue = queue;
 		this.type = queue.matchtype;
 		
 		starttime = System.currentTimeMillis();
+
+		Debug.Log(TAG.MATCH, "Requesting ID");
+		id = Database.getMatchID();
 		
-		for (QueuePlayer player : players) {
+		for (Player player : players) {
 			this.players.put(player, false);
 		}
 		
@@ -58,25 +65,28 @@ public class Match {
 	
 	
 	public void requestAccept() {
+		Debug.Log(TAG.MATCH, "Requesting Accept from players");
 		server.take(this);
-		for (QueuePlayer player : players.keySet()) {
+		for (Player player : players.keySet()) {
 			player.joinMatch(this);
 		}
-		queue.protocol.requestAccept(players.keySet());
+		queue.protocol.requestAccept(id, players.keySet());
 		acceptStartTime = System.currentTimeMillis();
 	}
 
 
-	public void playerAccept(QueuePlayer player, boolean accept) {
+	public void playerAccept(Player player, boolean accept) {
+		Debug.Log(TAG.MATCH, "PlayerAccept respond: " + player.getUrTAuth() + " with " + accept);
 		players.put(player, accept);
 	}
 	
 	public void checkAccept() {
 		int acceptcounter = 0;
-		for (QueuePlayer player : players.keySet()) {
+		for (Player player : players.keySet()) {
 			if (players.get(player)) acceptcounter++;
 		}
-		
+
+		Debug.Log(TAG.MATCH, "Accept ended, total accepts: " + acceptcounter);
 		if (acceptcounter < 10) {
 			returnToQueue();
 			server.free();
@@ -86,33 +96,36 @@ public class Match {
 	}
 	
 	public void returnToQueue() {
-		for (QueuePlayer player : players.keySet()) {
+		Debug.Log(TAG.MATCH, "Returning accepted players to queue due to overall acceptance failure");
+		for (Player player : players.keySet()) {
 			player.clear();
-			queue.protocol.acceptFailed(player, players.get(player));
+			queue.protocol.acceptFailed(id, player, players.get(player));
 			if (players.get(player)) {
-				queue.addPlayer(server.region, player);
+				queue.addPlayer(server.getRegion(), player);
 			}
 		}
 	}
 	
 	
 	public void startMatch() {
+
+		Debug.Log(TAG.MATCH, "Starting Match");
 		
 		starttime = System.currentTimeMillis();
 		
 		// PASSWORD
 		Random rand = new Random();
 		int password = rand.nextInt((999999-100000) + 1) + 100000;
-		System.out.println("Password: " + String.valueOf(password));
+		Debug.Log(TAG.MATCH, "Password: " + String.valueOf(password));
 		server.password = String.valueOf(password);
 		
 		// MAPCHOICE
 		HashMap<Map, Integer> maplist = new HashMap<Map, Integer>();
 
-		ArrayList<QueuePlayer> sortplayers = new ArrayList<QueuePlayer>();
-		sortplayers.add((QueuePlayer) players.keySet().toArray()[0]);
-		for (QueuePlayer player : players.keySet()) {
-			for (QueuePlayer sortplayer : sortplayers) {
+		ArrayList<Player> sortplayers = new ArrayList<Player>();
+		sortplayers.add((Player) players.keySet().toArray()[0]);
+		for (Player player : players.keySet()) {
+			for (Player sortplayer : sortplayers) {
 				if (player.equals(sortplayer)) continue;
 				else if (player.elo <= sortplayer.elo) {
 					sortplayers.add(sortplayers.indexOf(sortplayer), player); 
@@ -133,16 +146,16 @@ public class Match {
 				this.map = map1;
 			}
 		}
-		System.out.println("Map: " + this.map.name());
+		Debug.Log(TAG.MATCH, "Map: " + this.map.name());
 		
-		teamred = new QueuePlayer[5];
+		teamred = new Player[5];
 		teamred[0] = sortplayers.get(0);
 		teamred[1] = sortplayers.get(2);
 		teamred[3] = sortplayers.get(7);
 		teamred[4] = sortplayers.get(9);
 		elored = teamred[0].elo + teamred[1].elo + teamred[3].elo + teamred[4].elo;		
 
-		teamblue = new QueuePlayer[5];
+		teamblue = new Player[5];
 		teamblue[0] = sortplayers.get(1);
 		teamblue[1] = sortplayers.get(3);
 		teamblue[3] = sortplayers.get(6);
@@ -162,21 +175,21 @@ public class Match {
 		eloblue /= 5;
 		elored /= 5;
 
-		System.out.println("Team red:" + elored + " " + teamred.toString());
-		System.out.println("Team blue:" + eloblue + " " + teamblue.toString());
-		
-		//id = Database.createMatch(this);
+		Debug.Log(TAG.MATCH, "Team red:" + elored + " " + teamred.toString());
+		Debug.Log(TAG.MATCH, "Team blue:" + eloblue + " " + teamblue.toString());
 		
 		setupGameserver();
 		notifyPlayers();
 	}
 	
 	public void setupGameserver() {
+		Debug.Log(TAG.MATCH, "Setting up Gameserver");
 		queue.protocol.setupGameserver(server.getNetAddress(), id, type, map, server.password, teamred, teamblue);
 	}
 	
 	public void notifyPlayers() {
-		queue.protocol.acceptSuccess(players.keySet(), server.getPublicAddress(), server.password);
+		Debug.Log(TAG.MATCH, "Notifying Players");
+		queue.protocol.acceptSuccess(id, players.keySet(), server.getPublicAddress(), server.password);
 	}
 
 	public String getGameDate() {
@@ -189,32 +202,30 @@ public class Match {
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	public String playerLeft(QueuePlayer player) {
+	public String playerLeft(Player player) {
 		// quit match
-		return "RESPONSE|PLAYERLEFT|QUIT";
+		return "RESPONSE|PLAYERLEFT|quit";
 	}
 
 	public static Match find(String matchid) {
+		for (Match match : allmatches) {
+			if (match.id == Integer.valueOf(matchid)) return match;
+		}
 		return null;
 	}
 
 	public String result(String[] data) {
 		return null;
+	}
+
+	public static void updateAll() {
+		for (Match match : allmatches) {
+			match.update();
+		}
+	}
+
+	public long getStartTime() {
+		return starttime;
 	}
 
 }
