@@ -18,3 +18,23 @@ callback server -> master
 how to handle certain situations:
 - a player leaves before the match ends
 - a player doesnt show up
+
+
+
+
+todo:
+[x] sort queueplayers by queuetime (so the longest players are checked first)
+[x] pause queue time when joining a match (aka dont continue counting if hes waiting to accept and the match fails to happen)
+[ ] notify players of changes
+[x] handle timeouts of players ("player quits via alt-f4") [if reconnects (a new HELLO message), take out of queue]
+[ ] clean playerlist from time to time
+[ ] handle results from matches
+[ ] expand gamemode to own class with attributes (such as 2x10 instead of 1x20)
+[x] mmserver handles all gametypes on the same port
+[x] gameserver needs to send a HELLO message when enabled [rcon send from mmserver to request its hello-status] (to have a qport queue)
+[x] mmserver has to check gameserver frequently if its still available (in case the server network timed out)
+[ ] gameserver has to send a bye message when disabled (or shut down)
+[x] gameserver has to have an rcon password set
+[ ] load player elo
+[O] FOR THE FUTURE: handle prefered position
+[O] FOR THE FUTURE: ringer option? reconnect option?

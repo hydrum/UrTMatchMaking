@@ -35,7 +35,8 @@ public class Match {
 
 	public int id = 0;
 	public QueueManager queue;
-
+	
+	private boolean updating;
 	private long waitAccept = 30 * 1000; // waiting 30sec to accept
 	private long acceptStartTime = 0;
 	
@@ -58,7 +59,7 @@ public class Match {
 	}
 	
 	public void update() {
-		if (System.currentTimeMillis() - acceptStartTime >= waitAccept) {
+		if ((System.currentTimeMillis() - acceptStartTime >= waitAccept || getAcceptCount() == 10) && updating ) {
 			checkAccept();
 		}
 	}
@@ -72,6 +73,8 @@ public class Match {
 		}
 		queue.protocol.requestAccept(id, players.keySet());
 		acceptStartTime = System.currentTimeMillis();
+		
+		updating = true;
 	}
 
 
@@ -81,10 +84,8 @@ public class Match {
 	}
 	
 	public void checkAccept() {
-		int acceptcounter = 0;
-		for (Player player : players.keySet()) {
-			if (players.get(player)) acceptcounter++;
-		}
+		int acceptcounter = getAcceptCount();
+		updating = false;
 
 		Debug.Log(TAG.MATCH, "Accept ended, total accepts: " + acceptcounter);
 		if (acceptcounter < 10) {
@@ -95,10 +96,18 @@ public class Match {
 		}
 	}
 	
+	private int getAcceptCount() {
+		int acceptcounter = 0;
+		for (Player player : players.keySet()) {
+			if (players.get(player)) acceptcounter++;
+		}
+		return acceptcounter;
+	}
+	
 	public void returnToQueue() {
 		Debug.Log(TAG.MATCH, "Returning accepted players to queue due to overall acceptance failure");
 		for (Player player : players.keySet()) {
-			player.clear();
+			player.backToQueue(System.currentTimeMillis() - acceptStartTime);
 			queue.protocol.acceptFailed(id, player, players.get(player));
 			if (players.get(player)) {
 				queue.addPlayer(server.getRegion(), player);

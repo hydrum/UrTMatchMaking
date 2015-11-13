@@ -14,14 +14,11 @@ public class Main {
 
 	public static void main(String[] args) {
 		Debug.Log(TAG.MAIN, "initating servers");
-		ServerPool.addServer(new Server(new NetAddress("127.0.0.1", 27960), Region.eu));
-		Debug.Log(TAG.MAIN, "initating database");
-		Database.initConnection();
-
-		Debug.Log(TAG.MAIN, "Starting MMserver thread for ctf");
-		MMserver CTFserver = new MMserver(new Protocol(MatchType.ctf, 50001));
-		Thread ctfThread = new Thread(CTFserver);
-		ctfThread.start();
+		ServerPool.addServer(new Server(new NetAddress("127.0.0.1", 27960), new NetAddress("127.0.0.1", 1337), "1337rcon", Region.eu));
+		
+		Debug.Log(TAG.MAIN, "Starting MMserver");
+		MMserver.init(1337);
+		MMserver.run();
 		
 	}
 

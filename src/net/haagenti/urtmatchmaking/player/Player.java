@@ -13,7 +13,7 @@ public class Player {
 	public NetAddress address;
 	private String urtauth;
 	public Map map;
-	
+
 	public long queuestart = 0;
 	private Match match = null;
 	
@@ -28,28 +28,18 @@ public class Player {
 		this.address = address;
 		this.urtauth = urtauth;
 		
-		
 		allplayers.add(this);
 		// TODO load elo, load suspension
 	}
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	public void joinQueue(Map map, String positionpref) {
 		this.map = map;
 		queuestart = System.currentTimeMillis();
 	}
-	
 
-	public void clear() {
+	public void backToQueue(long timeInAccept) {
 		match = null;
-		
+		queuestart += (timeInAccept);
 	}
 
 	public boolean isInMatch() {
@@ -64,20 +54,13 @@ public class Player {
 		return urtauth;
 	}
 	
+	public boolean isinQueue() {
+		return queuestart == 0;
+	}
 	
-	
-	
-	
-	
-	
-	
-	
-
-
 	public boolean isSuspended() {
 		return (System.currentTimeMillis() - suspensionTime) < 0;
 	}
-	
 	
 	public static Player find(String urtauth) {
 		for (Player player : allplayers) {
@@ -88,13 +71,19 @@ public class Player {
 	
 	public static String getStatus(String urtauth, NetAddress address) {
 		Player player = Player.find(urtauth);
-		if (player == null) player = new Player(address, urtauth);
+		if (player == null) {
+			player = new Player(address, urtauth);
+		} else {
+			if (player.isinQueue()) {
+				player.queuestart = 0;
+			}
+		}
 
 		if (player.isInMatch()) return "RESPONSE|HELLO|ingame";
-		if (player.isSuspended()) return "RESPONSE|HELLO|suspended|until1337millisecs";
+		if (player.isSuspended()) return "RESPONSE|HELLO|suspended|1337millisecs";
 		
 		return "RESPONSE|HELLO|nothing";
 	}
-	
+
 }
 

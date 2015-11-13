@@ -8,6 +8,7 @@ import net.haagenti.urtmatchmaking.Debug.TAG;
 import net.haagenti.urtmatchmaking.config.Protocol;
 import net.haagenti.urtmatchmaking.match.Match;
 import net.haagenti.urtmatchmaking.match.MatchType;
+import net.haagenti.urtmatchmaking.player.ComparatorPlayerQueueTime;
 import net.haagenti.urtmatchmaking.player.Player;
 import net.haagenti.urtmatchmaking.server.Server;
 import net.haagenti.urtmatchmaking.server.ServerPool;
@@ -43,20 +44,26 @@ public class QueueManager implements Runnable {
 				// updating matches (timed events such as Accepting)
 				Match.updateAll();
 				
-				// each region seperately
+				// each region separately
 				for (Region region : queuelist.keySet()) {
+					queuelist.get(region).sort(new ComparatorPlayerQueueTime());
 					//Debug.Log(TAG.QUEUEMANAGER, "Checking Players for region " + region.name());
 
 					// copying list to be able to AxA
 					// IDEA: check for each player if there is a player that fits to him
 					// if they found 10, create a match and go ahead, maybe there are more matches going
+					ArrayList<Player> playerToRemove = new ArrayList<Player>();
 					ArrayList<Player> copyList = new ArrayList<Player>(queuelist.get(region));
 					for (Player player : queuelist.get(region)) {
-						
+						if (player.queuestart == 0) {
+							playerToRemove.add(player);
+							continue;
+						}
 						if (player.isInMatch()) continue;
 						ArrayList<Player> suitablePlayers = new ArrayList<Player>();
 
 						for (Player otherPlayer : copyList) {
+							if (otherPlayer.queuestart == 0) continue;
 							if (!otherPlayer.isInMatch() && isInEloRange(player, otherPlayer)) {
 								suitablePlayers.add(otherPlayer);
 								if (suitablePlayers.size() == 10) {
@@ -66,7 +73,23 @@ public class QueueManager implements Runnable {
 							}
 						}
 					}
+					// remove those players who found a new match
+					for (Match match : newMatches) {
+						queuelist.get(region).removeAll(match.players.keySet());
+					}
+					newMatches.clear();
+					
+					// remove players who aren't in the queue anymore (due to time out)
+					queuelist.get(region).removeAll(playerToRemove);
+					playerToRemove.clear();
 				}
+
+				for (Match match : newMatches) {
+					for (Region region : queuelist.keySet()) {
+						queuelist.get(region).removeAll(match.players.keySet());
+					}
+				}
+				newMatches.clear();
 
 				// remove those players who found a new match
 				for (Match match : newMatches) {
@@ -126,6 +149,10 @@ public class QueueManager implements Runnable {
 	}
 
 	public void leavePlayer(Player player) {
-		
+		// check if player is in queue
+		for (Region region : queuelist.keySet()) {
+			queuelist.get(region).remove(player);
+		}
+		player.queuestart = 0;
 	}
 }

@@ -7,17 +7,22 @@ import net.haagenti.urtmatchmaking.queue.Region;
 public class Server {
 	
 	private Match match;
-	
-	private NetAddress address;
+
+	private NetAddress pubAddress;
+	private NetAddress qAddress;
 	private Region region;
+	private String rcon;
 	
 	public String password;
 	
 	private boolean isTaken = false;
 	
-	public Server(NetAddress address, Region region) {
-		this.address = address;
-	}
+	public Server(NetAddress pubAddress, NetAddress qAddress, String rcon, Region region) {
+		this.pubAddress = pubAddress;
+		this.qAddress = qAddress;
+		this.setRcon(rcon);
+		this.region = region;
+	}	
 	
 	public void take(Match match) {
 		this.match = match;
@@ -34,15 +39,23 @@ public class Server {
 	}
 
 	public NetAddress getNetAddress() {
-		return address;
+		return qAddress;
 	}
 
 	public NetAddress getPublicAddress() {
-		return address;
+		return pubAddress;
 	}
 
 	public Region getRegion() {
 		return region;
+	}
+
+	public String getRcon() {
+		return rcon;
+	}
+
+	public void setRcon(String rcon) {
+		this.rcon = rcon;
 	}
 
 }

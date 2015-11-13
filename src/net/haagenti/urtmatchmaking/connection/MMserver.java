@@ -9,47 +9,53 @@ import net.haagenti.urtmatchmaking.Debug;
 import net.haagenti.urtmatchmaking.Debug.TAG;
 import net.haagenti.urtmatchmaking.config.Protocol;
 
-public class MMserver implements Runnable {
+public class MMserver {
 	
-	private DatagramSocket serverSocket;
-	private byte[] receiveData;
-	private byte[] sendData;
-	
-	public Protocol cfg;
-	
-	public MMserver(Protocol cfg) {
-		this.cfg = cfg;
-		setup();
-	}
+	private static DatagramSocket serverSocket;
+	private static byte[] receiveData;
+	private static byte[] sendData;
 
-	public void setup() {
+	public static Protocol protocol;
+	private static int port;
+	
+	private MMserver() { }
+
+	public static void init(int port) {
 		try {
+
+			Debug.Log(TAG.MAIN, "initating database");
+			Database.initConnection();
+			
 			Debug.Log(TAG.MMSERVER, "Setting up MMserver");
-			serverSocket = new DatagramSocket(cfg.port);
+			
+			protocol = new Protocol();
+			MMserver.port = port;
+			
+			serverSocket = new DatagramSocket(port);
 			receiveData = new byte[1024];
 			sendData = new byte[1024];
-			cfg.mmserver = this;
+			
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public void run() {
+	public static void run() {
 		while (true) {
 			try {
 				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				serverSocket.receive(receivePacket);
 				NetAddress address = new NetAddress(receivePacket.getAddress(), receivePacket.getPort());
-				String response = cfg.processPacket(new String(receivePacket.getData()), address);
+				String response = protocol.processPacket(new String(receivePacket.getData()), address);
 				if (response != null)
 					Debug.Log(TAG.MMSERVER, "Sending reply package");
-					send(address, response);
+					MMserver.send(address, response);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}
-	public void send(NetAddress address, String data) {
+	public static void send(NetAddress address, String data) {
 		try {
 			sendData = data.getBytes();
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address.address, address.port);
