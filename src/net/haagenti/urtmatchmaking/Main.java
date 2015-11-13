@@ -1,10 +1,10 @@
 package net.haagenti.urtmatchmaking;
 
 import net.haagenti.urtmatchmaking.Debug.TAG;
-import net.haagenti.urtmatchmaking.config.Protocol;
 import net.haagenti.urtmatchmaking.connection.Database;
 import net.haagenti.urtmatchmaking.connection.MMserver;
 import net.haagenti.urtmatchmaking.connection.NetAddress;
+import net.haagenti.urtmatchmaking.connection.Protocol;
 import net.haagenti.urtmatchmaking.match.MatchType;
 import net.haagenti.urtmatchmaking.queue.Region;
 import net.haagenti.urtmatchmaking.server.Server;

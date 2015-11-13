@@ -7,7 +7,8 @@ import java.net.SocketException;
 
 import net.haagenti.urtmatchmaking.Debug;
 import net.haagenti.urtmatchmaking.Debug.TAG;
-import net.haagenti.urtmatchmaking.config.Protocol;
+import net.haagenti.urtmatchmaking.player.PlayerCheck;
+import net.haagenti.urtmatchmaking.server.ServerCheck;
 
 public class MMserver {
 	
@@ -15,7 +16,7 @@ public class MMserver {
 	private static byte[] receiveData;
 	private static byte[] sendData;
 
-	public static Protocol protocol;
+	private static Protocol protocol;
 	private static int port;
 	
 	private MMserver() { }
@@ -64,5 +65,12 @@ public class MMserver {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}	
+	}
+	
+	public static void disconnect() {
+		protocol.disconnect();
+		Database.disconnect();
+		ServerCheck.stop();
+		PlayerCheck.stop();
 	}
 }

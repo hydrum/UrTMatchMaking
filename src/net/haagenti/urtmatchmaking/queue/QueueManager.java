@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 import net.haagenti.urtmatchmaking.Debug;
 import net.haagenti.urtmatchmaking.Debug.TAG;
-import net.haagenti.urtmatchmaking.config.Protocol;
+import net.haagenti.urtmatchmaking.connection.Protocol;
 import net.haagenti.urtmatchmaking.match.Match;
 import net.haagenti.urtmatchmaking.match.MatchType;
 import net.haagenti.urtmatchmaking.player.ComparatorPlayerQueueTime;
@@ -21,6 +21,7 @@ public class QueueManager implements Runnable {
 	private HashMap<Region, ArrayList<Player>> queuelist = new HashMap<Region, ArrayList<Player>>();
 	private ArrayList<Match> newMatches = new ArrayList<Match>();
 	
+	private boolean stop = false;
 	
 	private int elowidth = 10; // elo width to increase each second
 	
@@ -38,7 +39,7 @@ public class QueueManager implements Runnable {
 	
 	@Override
 	public void run() {
-		while (true) {
+		while (!stop) {
 			try {
 				
 				// updating matches (timed events such as Accepting)
@@ -46,6 +47,7 @@ public class QueueManager implements Runnable {
 				
 				// each region separately
 				for (Region region : queuelist.keySet()) {
+					if (stop) return;
 					queuelist.get(region).sort(new ComparatorPlayerQueueTime());
 					//Debug.Log(TAG.QUEUEMANAGER, "Checking Players for region " + region.name());
 
@@ -55,6 +57,7 @@ public class QueueManager implements Runnable {
 					ArrayList<Player> playerToRemove = new ArrayList<Player>();
 					ArrayList<Player> copyList = new ArrayList<Player>(queuelist.get(region));
 					for (Player player : queuelist.get(region)) {
+						if (stop) return;
 						if (player.queuestart == 0) {
 							playerToRemove.add(player);
 							continue;
@@ -63,6 +66,7 @@ public class QueueManager implements Runnable {
 						ArrayList<Player> suitablePlayers = new ArrayList<Player>();
 
 						for (Player otherPlayer : copyList) {
+							if (stop) return;
 							if (otherPlayer.queuestart == 0) continue;
 							if (!otherPlayer.isInMatch() && isInEloRange(player, otherPlayer)) {
 								suitablePlayers.add(otherPlayer);
@@ -75,6 +79,7 @@ public class QueueManager implements Runnable {
 					}
 					// remove those players who found a new match
 					for (Match match : newMatches) {
+						if (stop) return;
 						queuelist.get(region).removeAll(match.players.keySet());
 					}
 					newMatches.clear();
@@ -85,7 +90,9 @@ public class QueueManager implements Runnable {
 				}
 
 				for (Match match : newMatches) {
+					if (stop) return;
 					for (Region region : queuelist.keySet()) {
+						if (stop) return;
 						queuelist.get(region).removeAll(match.players.keySet());
 					}
 				}
@@ -93,7 +100,9 @@ public class QueueManager implements Runnable {
 
 				// remove those players who found a new match
 				for (Match match : newMatches) {
+					if (stop) return;
 					for (Region region : queuelist.keySet()) {
+						if (stop) return;
 						queuelist.get(region).removeAll(match.players.keySet());
 					}
 				}
@@ -151,8 +160,14 @@ public class QueueManager implements Runnable {
 	public void leavePlayer(Player player) {
 		// check if player is in queue
 		for (Region region : queuelist.keySet()) {
+			if (stop) return;
 			queuelist.get(region).remove(player);
 		}
 		player.queuestart = 0;
+	}
+
+	public void stop() {
+		stop = true;
+		
 	}
 }

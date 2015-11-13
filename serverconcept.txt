@@ -24,6 +24,9 @@ M: RESPONSE|GETSTATUSINFO|inqueue:13|ongoingmatches:2|nextavimatch:2h31m12s
 C: GETMAPLIST|mode:ctf
 M: RESPONSE|GETMAPLIST|maps:ut4_turnpike;ut4_abbey;ut4_algiers;ut4_tohunga_b8
 
+M: PLAYERALIVE
+C: PLAYERALIVE|urtauth:gost0r
+
 
 
 [GameServer - Master]

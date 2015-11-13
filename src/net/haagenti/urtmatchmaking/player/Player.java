@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import net.haagenti.urtmatchmaking.connection.NetAddress;
 import net.haagenti.urtmatchmaking.match.Map;
 import net.haagenti.urtmatchmaking.match.Match;
+import net.haagenti.urtmatchmaking.server.ServerCheck;
 
 public class Player {
 	
@@ -29,6 +30,7 @@ public class Player {
 		this.urtauth = urtauth;
 		
 		allplayers.add(this);
+		if (!ServerCheck.isRunning()) new Thread(new ServerCheck());
 		// TODO load elo, load suspension
 	}
 	
@@ -83,6 +85,14 @@ public class Player {
 		if (player.isSuspended()) return "RESPONSE|HELLO|suspended|1337millisecs";
 		
 		return "RESPONSE|HELLO|nothing";
+	}
+
+	public static void removePlayer(Player player) {
+		allplayers.remove(player);
+	}
+
+	public static Player[] getAllPlayers() {
+		return (Player[]) allplayers.toArray();
 	}
 
 }

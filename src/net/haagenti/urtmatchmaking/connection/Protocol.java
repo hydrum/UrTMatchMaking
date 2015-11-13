@@ -1,4 +1,4 @@
-package net.haagenti.urtmatchmaking.config;
+package net.haagenti.urtmatchmaking.connection;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -6,12 +6,11 @@ import java.util.Set;
 
 import net.haagenti.urtmatchmaking.Debug;
 import net.haagenti.urtmatchmaking.Debug.TAG;
-import net.haagenti.urtmatchmaking.connection.MMserver;
-import net.haagenti.urtmatchmaking.connection.NetAddress;
 import net.haagenti.urtmatchmaking.match.Map;
 import net.haagenti.urtmatchmaking.match.Match;
 import net.haagenti.urtmatchmaking.match.MatchType;
 import net.haagenti.urtmatchmaking.player.Player;
+import net.haagenti.urtmatchmaking.player.PlayerCheck;
 import net.haagenti.urtmatchmaking.queue.QueueManager;
 import net.haagenti.urtmatchmaking.queue.Region;
 import net.haagenti.urtmatchmaking.server.Server;
@@ -46,11 +45,12 @@ public class Protocol {
 		case "GETMAPLIST": return processGetMapList(sdata, address);
 		case "PLAYERLEFT": return processPlayerLeft(sdata, address);
 		case "RESULT": return processResult(sdata, address);
+		case "PLAYERSTATUS": return processPlayerStatus(sdata, address);
 		}
 		
 		return null;
 	}
-	
+
 	private String processHello(String[] data, NetAddress address) {
 		if (data.length == 2) {
 			return Player.getStatus(data[1].split(":")[1], address);
@@ -131,6 +131,17 @@ public class Protocol {
 	
 	
 	
+
+	
+	private String processPlayerStatus(String[] data, NetAddress address) {
+		if (data.length == 2) {
+			PlayerCheck.setPlayerStatus(Player.find(data[1].split(":")[1]));
+		}
+		return null;
+	}
+	
+	
+	
 	
 	// REQUESTS //
 
@@ -166,6 +177,12 @@ public class Protocol {
 	public void acceptSuccess(int matchid, Set<Player> players, NetAddress serverpubaddress, String password) {
 		for (Player player : players) {
 			MMserver.send(player.address, "MATCHACCEPT|matchid:" + matchid + "|success|server:" + serverpubaddress.address + ":" + serverpubaddress.port + "|password:" + password);
+		}
+	}
+
+	public void disconnect() {
+		for (QueueManager queue : queuemanagerlist.values()) {
+			queue.stop();
 		}
 	}
 	

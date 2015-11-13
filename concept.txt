@@ -4,6 +4,13 @@ queue up, vote for a map
 the longer you wait, the greater skill difference will be (elo +- bounce increases)
 if players found, match their votes, set up the server, auto-connect to the server
 
+PREFERED POSITION:
+you vote for a map, tell your pos pref def>mid>atk
+mmserver compiles the most voted map (ut4_turnpike), finds out the position count (2atk, 1 mid, 2 def)
+player with the most elo gets his perfered position, going down from that on
+
+
+
 on server: have a cvar which disables certain features:
 - each player has to ready up before it starts (autotimer?)
 - votes are disabled
@@ -19,6 +26,9 @@ how to handle certain situations:
 - a player leaves before the match ends
 - a player doesnt show up
 
+- server crashes while in match
+- mmserver is down and needs to find out which server is available (need qport to send packets)
+
 
 
 
@@ -27,13 +37,13 @@ todo:
 [x] pause queue time when joining a match (aka dont continue counting if hes waiting to accept and the match fails to happen)
 [ ] notify players of changes
 [x] handle timeouts of players ("player quits via alt-f4") [if reconnects (a new HELLO message), take out of queue]
-[ ] clean playerlist from time to time
+[x] clean playerlist from time to time
 [ ] handle results from matches
 [ ] expand gamemode to own class with attributes (such as 2x10 instead of 1x20)
 [x] mmserver handles all gametypes on the same port
 [x] gameserver needs to send a HELLO message when enabled [rcon send from mmserver to request its hello-status] (to have a qport queue)
 [x] mmserver has to check gameserver frequently if its still available (in case the server network timed out)
-[ ] gameserver has to send a bye message when disabled (or shut down)
+[x] gameserver has to send a bye message when disabled (or shut down) (automatic handled by ServerCheck)
 [x] gameserver has to have an rcon password set
 [ ] load player elo
 [O] FOR THE FUTURE: handle prefered position
