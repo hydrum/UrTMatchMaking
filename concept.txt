@@ -39,12 +39,13 @@ todo:
 [x] handle timeouts of players ("player quits via alt-f4") [if reconnects (a new HELLO message), take out of queue]
 [x] clean playerlist from time to time
 [ ] handle results from matches
-[ ] expand gamemode to own class with attributes (such as 2x10 instead of 1x20)
+[x] expand gamemode to own class with attributes (such as 2x10 instead of 1x20)
 [x] mmserver handles all gametypes on the same port
 [x] gameserver needs to send a HELLO message when enabled [rcon send from mmserver to request its hello-status] (to have a qport queue)
 [x] mmserver has to check gameserver frequently if its still available (in case the server network timed out)
 [x] gameserver has to send a bye message when disabled (or shut down) (automatic handled by ServerCheck)
 [x] gameserver has to have an rcon password set
 [ ] load player elo
+[ ] handle queue disable
 [O] FOR THE FUTURE: handle prefered position
 [O] FOR THE FUTURE: ringer option? reconnect option?

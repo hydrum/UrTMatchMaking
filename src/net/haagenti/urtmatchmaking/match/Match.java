@@ -9,6 +9,7 @@ import java.util.Random;
 import net.haagenti.urtmatchmaking.Debug;
 import net.haagenti.urtmatchmaking.Debug.TAG;
 import net.haagenti.urtmatchmaking.connection.Database;
+import net.haagenti.urtmatchmaking.mode.GameType;
 import net.haagenti.urtmatchmaking.player.Player;
 import net.haagenti.urtmatchmaking.queue.QueueManager;
 import net.haagenti.urtmatchmaking.server.Server;
@@ -22,7 +23,7 @@ public class Match {
 	private Server server;
 	public HashMap<Player, Boolean> players;
 	
-	private MatchType type;
+	private GameType type;
 	
 	public Player[] teamred;
 	public Player[] teamblue;	
@@ -44,7 +45,7 @@ public class Match {
 		Debug.Log(TAG.MATCH, "Setting up Match");
 		this.server = server;
 		this.queue = queue;
-		this.type = queue.matchtype;
+		this.type = queue.gametype;
 		
 		starttime = System.currentTimeMillis();
 

@@ -7,7 +7,7 @@ import net.haagenti.urtmatchmaking.Debug;
 import net.haagenti.urtmatchmaking.Debug.TAG;
 import net.haagenti.urtmatchmaking.connection.Protocol;
 import net.haagenti.urtmatchmaking.match.Match;
-import net.haagenti.urtmatchmaking.match.MatchType;
+import net.haagenti.urtmatchmaking.mode.GameType;
 import net.haagenti.urtmatchmaking.player.ComparatorPlayerQueueTime;
 import net.haagenti.urtmatchmaking.player.Player;
 import net.haagenti.urtmatchmaking.server.Server;
@@ -15,7 +15,7 @@ import net.haagenti.urtmatchmaking.server.ServerPool;
 
 public class QueueManager implements Runnable {
 
-	public MatchType matchtype;
+	public GameType gametype;
 	public Protocol protocol;
 
 	private HashMap<Region, ArrayList<Player>> queuelist = new HashMap<Region, ArrayList<Player>>();
@@ -26,13 +26,13 @@ public class QueueManager implements Runnable {
 	private int elowidth = 10; // elo width to increase each second
 	
 
-	public QueueManager(Protocol protocol, MatchType type) {
+	public QueueManager(Protocol protocol, GameType type) {
 		Debug.Log(TAG.QUEUEMANAGER, "Setting up QueueManager for " + type.name());
-		this.matchtype = type;
+		this.gametype = type;
 		this.protocol = protocol;
 
 		Debug.Log(TAG.QUEUEMANAGER, "Setting up Regions");
-		for (Region region : Region.values()) {
+		for (Region region : Region.list) {
 			queuelist.put(region, new ArrayList<Player>());
 		}
 	}

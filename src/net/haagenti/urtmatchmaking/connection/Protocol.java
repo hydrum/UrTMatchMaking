@@ -8,7 +8,7 @@ import net.haagenti.urtmatchmaking.Debug;
 import net.haagenti.urtmatchmaking.Debug.TAG;
 import net.haagenti.urtmatchmaking.match.Map;
 import net.haagenti.urtmatchmaking.match.Match;
-import net.haagenti.urtmatchmaking.match.MatchType;
+import net.haagenti.urtmatchmaking.mode.GameType;
 import net.haagenti.urtmatchmaking.player.Player;
 import net.haagenti.urtmatchmaking.player.PlayerCheck;
 import net.haagenti.urtmatchmaking.queue.QueueManager;
@@ -18,13 +18,13 @@ import net.haagenti.urtmatchmaking.server.ServerPool;
 
 public class Protocol {
 
-	private HashMap<MatchType, QueueManager> queuemanagerlist = new HashMap<MatchType, QueueManager>();;
+	private HashMap<GameType, QueueManager> queuemanagerlist = new HashMap<GameType, QueueManager>();;
 	
 	public Protocol() {
 		Debug.Log(TAG.PROTOCOL, "Setting up Protocol...");
 
 		Debug.Log(TAG.PROTOCOL, "Initializing new QueueManager Thread");
-		for (MatchType type : MatchType.values()) {
+		for (GameType type : GameType.list) {
 			queuemanagerlist.put(type, new QueueManager(this, type));
 			new Thread(queuemanagerlist.get(type)).start();
 			
@@ -58,7 +58,7 @@ public class Protocol {
 		
 		if (data.length == 4) {
 			return "RESPONSE|HELLO|" + ServerPool.addServer(new Server(address, new NetAddress(data[1].split(":")[1], Integer.valueOf(data[2].split(":")[1])),
-					data[3].split(":")[1], Region.valueOf(data[4].split(":")[1])));
+					data[3].split(":")[1], Region.hasRegion(data[4].split(":")[1])));
 		}
 		return null;
 	}
@@ -66,15 +66,17 @@ public class Protocol {
 	private String processQueue(String[] data, NetAddress address) {
 		if (data.length == 6) {
 			for (QueueManager queue : queuemanagerlist.values()) {
-				if (data[3].split(":")[1].equals(queue.matchtype.name())) {
+				
+				if (data[3].split(":")[1].equals(queue.gametype.name())) { // Check if gametype is the right one
+					
 					String urtauth = data[1].split(":")[1];
-					Region region = Region.valueOf(data[2].split(":")[1]);
+					Region region = Region.hasRegion(data[2].split(":")[1]);
 					Map map = Map.valueOf(data[3].split(":")[1]);
 					String position = data[4].split(":")[1];
 					
 					Player player = Player.find(urtauth);
 					
-					if (player != null) {
+					if (player != null && region != null && queue.gametype.hasMap(map)) {
 						player.joinQueue(map, position);
 						
 						return queue.addPlayer(region, player);
@@ -159,7 +161,7 @@ public class Protocol {
 		}
 	}
 
-	public void setupGameserver(NetAddress qaddress, int matchid, MatchType type, Map map, String password, Player[] teamred, Player[] teamblue) {
+	public void setupGameserver(NetAddress qaddress, int matchid, GameType type, Map map, String password, Player[] teamred, Player[] teamblue) {
 		String teamred_print = teamred[0].getUrTAuth();
 		for (int i = 1; i < teamred.length; i++) {
 			teamred_print += teamred[i].getUrTAuth();
